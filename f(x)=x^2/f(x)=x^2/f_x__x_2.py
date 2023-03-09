@@ -1,68 +1,48 @@
 import random
 
-# Define the fitness function that evaluates the fitness of a solution
+# Define the range of possible values of x
+x_min = -10
+x_max = 10
 
-def fitness_function(solution):
-    # In this example, we'll use a simple function f(x) = x^2
-    return solution ** 2
+# Define the parameters of the genetic algorithm
+population_size = 10
+mutation_rate = 0.1
+generations = 50
 
-# Generate a random solution within the problem space
-def generate_random_solution():
-    return random.uniform(-10, 10)
+# Define the fitness function
+def fitness(x):
+    return x**2
 
-# Generate an initial population of solutions
-def generate_initial_population(population_size):
-    return [generate_random_solution() for _ in range(population_size)]
+# Generate an initial population
+population = [random.uniform(x_min, x_max) for i in range(population_size)]
 
-# Select two parent solutions from the population using tournament selection
-def select_parents(population, fitnesses, tournament_size=3):
-    # Randomly select a few solutions from the population and choose the fittest
-    tournament = random.sample(list(enumerate(population)), tournament_size)
-    fittest_solution = max(tournament, key=lambda x: fitnesses[x[0]])
-    # Remove the fittest solution from the tournament and choose the fittest of the remaining
-    tournament.remove(fittest_solution)
-    second_fittest_solution = max(tournament, key=lambda x: fitnesses[x[0]])
-    return fittest_solution[1], second_fittest_solution[1]
+# Repeat the genetic algorithm for a fixed number of generations
+for generation in range(generations):
+    # Evaluate the fitness of each chromosome
+    fitness_values = [fitness(x) for x in population]
 
-# Recombine the genes of the two parent solutions to create a child solution
-def recombine_parents(parents):
-    return (parents[0] + parents[1]) / 2.0
+    # Select the fittest chromosomes
+    fittest_chromosomes = [population[i] for i in sorted(range(population_size), key=lambda i: fitness_values[i], reverse=True)[:population_size//2]]
 
-# Mutate the genes of a solution to create a new solution
-def mutate_solution(solution, mutation_rate, mutation_range):
-    if random.random() < mutation_rate:
-        return solution + random.uniform(-mutation_range, mutation_range)
-    else:
-        return solution
+    # Create new offspring chromosomes through mutation and crossover
+    offspring_chromosomes = []
+    for i in range(population_size//2):
+        parent1 = random.choice(fittest_chromosomes)
+        parent2 = random.choice(fittest_chromosomes)
+        offspring = (parent1 + parent2) / 2  # simple average crossover
+        if random.random() < mutation_rate:
+            offspring += random.uniform(-1, 1)
+        offspring_chromosomes.append(offspring)
 
-# Run the genetic algorithm
-def run_genetic_algorithm(population_size, num_generations, mutation_rate, mutation_range):
-    # Generate an initial population of solutions
-    population = generate_initial_population(population_size)
+    # Evaluate the fitness of the offspring chromosomes
+    offspring_fitness_values = [fitness(x) for x in offspring_chromosomes]
 
-    # Iterate through the generations
-    for i in range(num_generations):
-        # Evaluate the fitness of each solution in the population
-        fitnesses = [fitness_function(solution) for solution in population]
+    # Select the fittest offspring chromosomes and replace the weakest members of the population with them
+    population = [population[i] for i in sorted(range(population_size), key=lambda i: fitness_values[i], reverse=True)[:population_size//2]] + [offspring_chromosomes[i] for i in sorted(range(population_size//2), key=lambda i: offspring_fitness_values[i], reverse=True)]
 
-        # Generate a new population by selecting and recombining the fittest solutions
-        new_population = []
-        for _ in range(population_size):
-            parents = select_parents(population, fitnesses)
-            child = recombine_parents(parents)
-            child = mutate_solution(child, mutation_rate, mutation_range)
-            new_population.append(child)
-        population = new_population
+# Find the best chromosome in the final population
+best_chromosome = max(population, key=lambda x: fitness(x))
+best_fitness = fitness(best_chromosome)
 
-    # Return the fittest solution
-    return max(population, key=fitness_function)
-
-# Example usage
-best_solution = run_genetic_algorithm(
-    population_size=50,
-    num_generations=100,
-    mutation_rate=0.1,
-    mutation_range=2.0
-)
-
-print(f"Best solution found: x = {best_solution}, f(x) = {fitness_function(best_solution)}")
+print("Best chromosome:", best_chromosome)
+print("Best fitness:", best_fitness)
